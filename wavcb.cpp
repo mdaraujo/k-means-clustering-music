@@ -2,7 +2,7 @@
 #include <vector>
 #include <string>
 #include <sndfile.hh>
-#include "wavquant.h"
+#include "kmeans.h"
 
 using namespace std;
 
@@ -11,13 +11,13 @@ constexpr size_t FRAMES_BUFFER_SIZE = 65536; // Buffer for reading frames
 int main(int argc, char *argv[])
 {
 
-	if (argc < 4)
+	if (argc < 5)
 	{
-		cerr << "Usage: wavhist <input file> <number of bits> <channel?>" << endl;
+		cerr << "Usage: wavhist <input file> <block size> <overlap> <codebook size>" << endl;
 		return 1;
 	}
 
-	string fileName{argv[argc - 3]};
+	string fileName{argv[argc - 4]};
 	SndfileHandle sndFile{fileName};
 	if (sndFile.error())
 	{
@@ -37,32 +37,23 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	int numBits{stoi(argv[argc - 2])};
-	// TODO: Validar numero de bits - n <= 16
-
-	// TODO: if channel not passed as arg, dont dump text
-	int channel{stoi(argv[argc - 1])};
-	if (channel >= sndFile.channels())
-	{
-		cerr << "Error: invalid channel requested" << endl;
-		return 1;
-	}
+	int blockSize{stoi(argv[argc - 3])};
+	int overlap{stoi(argv[argc - 2])};
+	int codebookSize{stoi(argv[argc - 1])};
+	// TODO: Validar inputs
 
 	fileName = fileName.substr(0, fileName.find("."));
-	WAVQuant quant{sndFile, numBits, fileName};
+	KMeans kmeans{blockSize, overlap, codebookSize};
 
 	size_t nFrames;
 	vector<short> samples(FRAMES_BUFFER_SIZE * sndFile.channels());
 	while ((nFrames = sndFile.readf(samples.data(), FRAMES_BUFFER_SIZE)))
 	{
 		samples.resize(nFrames * sndFile.channels());
-		quant.update(samples);
+		kmeans.update(samples);
 	}
 
-	// TODO: if channel not passed as arg, dont dump text
-	quant.dump_to_text_file(channel);
-
-	quant.dump_to_wav_file();
+	kmeans.run();
 
 	return 0;
 }
