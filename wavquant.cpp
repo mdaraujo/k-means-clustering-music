@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <sys/stat.h>
 #include <sndfile.hh>
 #include "wavquant.h"
 
@@ -49,7 +50,18 @@ int main(int argc, char *argv[])
 	}
 
 	fileName = fileName.substr(0, fileName.find("."));
-	WAVQuant quant{sndFile, numBits, fileName};
+	string outFolder = "quants";
+	if (mkdir(outFolder.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
+	{
+		// error is not already exists
+		if (errno != EEXIST)
+		{
+			cout << "cannot create quants output folder" << endl;
+			return 1;
+		}
+	}
+
+	WAVQuant quant{sndFile, numBits, outFolder + "/" + fileName};
 
 	size_t nFrames;
 	vector<short> samples(FRAMES_BUFFER_SIZE * sndFile.channels());

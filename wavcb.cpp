@@ -62,13 +62,9 @@ int main(int argc, char *argv[])
 	string outFolder = "codebooks";
 	if (mkdir(outFolder.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
 	{
-		if (errno == EEXIST)
+		// error is not already exists
+		if (errno != EEXIST)
 		{
-			// alredy exists
-		}
-		else
-		{
-			// something else
 			cout << "cannot create codebooks output folder" << endl;
 			return 1;
 		}
