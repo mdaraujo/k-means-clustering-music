@@ -2,6 +2,8 @@
 #include <vector>
 #include <string>
 #include <sndfile.hh>
+#include <stdio.h>
+#include <sys/stat.h>
 #include "kmeans.h"
 
 using namespace std;
@@ -55,7 +57,34 @@ int main(int argc, char *argv[])
 		break; // for debug with less frames
 	}
 
-	kmeans.run();
+	vector<vector<short>> codebook = kmeans.run();
+
+	string outFolder = "codebooks";
+	if (mkdir(outFolder.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
+	{
+		if (errno == EEXIST)
+		{
+			// alredy exists
+		}
+		else
+		{
+			// something else
+			cout << "cannot create codebooks output folder" << endl;
+			return 1;
+		}
+	}
+
+	ofstream outFile;
+	string outFileName = fileName + "_bs" + to_string(blockSize) + "_ol" + to_string(overlap) + "_k" + to_string(codebookSize) + ".txt";
+	outFile.open(outFolder + "/" + outFileName);
+
+	for (auto block : codebook)
+	{
+		for (auto value : block)
+			outFile << value << ',';
+		outFile << '\n';
+	}
+	outFile.close();
 
 	return 0;
 }

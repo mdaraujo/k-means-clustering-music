@@ -63,7 +63,7 @@ class KMeans
 		}
 	}
 
-	void run()
+	std::vector<std::vector<short>> run()
 	{
 		unsigned int iterations = 0;
 		unsigned int movedBlocks;
@@ -129,6 +129,7 @@ class KMeans
 			std::cout << ": " << std::setfill(' ') << std::setw(5) << movedBlocks << " moves"
 					  << " -> Error: " << error << std::endl;
 		};
+		return centroids;
 	}
 
 	std::vector<short> findCentroid(const std::vector<std::vector<short>> &cluster)
