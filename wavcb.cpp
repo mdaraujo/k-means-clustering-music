@@ -6,7 +6,8 @@
 
 using namespace std;
 
-constexpr size_t FRAMES_BUFFER_SIZE = 65536; // Buffer for reading frames
+//constexpr size_t FRAMES_BUFFER_SIZE = 65536; // Buffer for reading frames
+constexpr size_t FRAMES_BUFFER_SIZE = 136; // Buffer for reading frames
 
 int main(int argc, char *argv[])
 {
@@ -51,6 +52,7 @@ int main(int argc, char *argv[])
 	{
 		samples.resize(nFrames * sndFile.channels());
 		kmeans.update(samples);
+		break; // for debug with less frames
 	}
 
 	kmeans.run();

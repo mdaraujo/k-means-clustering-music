@@ -3,6 +3,8 @@
 
 #include <iostream>
 #include <iomanip>
+#include <algorithm>
+#include <assert.h>
 #include <fstream>
 #include <vector>
 #include <tuple>
@@ -34,16 +36,16 @@ class KMeans
 		centroids.resize(k);
 
 		// initialize random centroids
-		for (int i = 0; i < k; i++)
-		{
-			std::vector<short> centroid; // random centroid
-			for (int j = 0; j < blockSize; j++)
-			{
-				// generating random shorts - from -32768 to 32767
-				centroid.push_back(rand() % 65535 + -32768);
-			}
-			centroids[i] = centroid;
-		}
+		// for (int i = 0; i < k; i++)
+		// {
+		// 	std::vector<short> centroid; // random centroid
+		// 	for (int j = 0; j < blockSize; j++)
+		// 	{
+		// 		// generating random shorts - from -32768 to 32767
+		// 		centroid.push_back(rand() % 65535 + -32768);
+		// 	}
+		// 	centroids[i] = centroid;
+		// }
 	}
 
 	void update(const std::vector<short> &samples)
@@ -57,11 +59,7 @@ class KMeans
 			{
 				block.push_back(samples[i + j]);
 			}
-			//std::cout << i << std::endl;
-
-			// put block in the better cluster
-			auto betterCluster = findBetterCluster(block);
-			clusters[std::get<0>(betterCluster)].push_back(block);
+			clusters[0].push_back(block);
 		}
 	}
 
@@ -70,25 +68,31 @@ class KMeans
 		unsigned int iterations = 0;
 		unsigned int movedBlocks;
 		double error;
+		std::vector<std::tuple<unsigned int, unsigned int>> visitedBlocks;
 
-		do
+		// initialize centroids
+		for (int i = 0; i < k; i++)
+		{
+			int randomBlock = rand() % (clusters[0].size() - 1);
+			centroids[i] = clusters[0][randomBlock];
+		}
+
+		while (true)
 		{
 			iterations++;
 			movedBlocks = 0;
 			error = 0;
-
-			// move centroids
-			for (size_t i = 0; i < clusters.size(); i++)
-			{
-				centroids[i] = findCentroid(clusters[i]);
-				// printVector(centroids[i]);
-			}
+			visitedBlocks.clear();
 
 			// assign blocks to better cluster
 			for (size_t i = 0; i < clusters.size(); i++)
 			{
 				for (size_t j = 0; j < clusters[i].size(); j++)
 				{
+					// check if block was already visited
+					if (std::find(visitedBlocks.begin(), visitedBlocks.end(), std::make_tuple(i, j)) != visitedBlocks.end())
+						continue;
+
 					auto betterCluster = findBetterCluster(clusters[i][j]);
 					unsigned int clusterIdx = std::get<0>(betterCluster);
 
@@ -97,16 +101,34 @@ class KMeans
 						movedBlocks++;
 						clusters[clusterIdx].push_back(clusters[i][j]);
 						clusters[i].erase(clusters[i].begin() + j);
+
+						visitedBlocks.push_back(std::make_tuple(clusterIdx, clusters[clusterIdx].size() - 1));
+
+						// in case the erased block in cluster i, influence the position of a visited block
+						for (size_t v = 0; v < visitedBlocks.size(); v++)
+						{
+							if (std::get<0>(visitedBlocks[v]) == i && std::get<1>(visitedBlocks[v]) > j)
+								std::get<1>(visitedBlocks[v])--;
+						}
 					}
 					error += std::get<1>(betterCluster);
 				}
 			}
 
-			std::cout << "Iteration " << std::setfill('0') << std::setw(3) << iterations;
-			std::cout << ": " << movedBlocks << " moves"
-					  << " -> Error: " << error << std::endl;
+			if (movedBlocks == 0)
+				break;
 
-		} while (movedBlocks != 0);
+			// move centroids
+			for (size_t i = 0; i < clusters.size(); i++)
+			{
+				centroids[i] = findCentroid(clusters[i]);
+				//printVector(centroids[i]);
+			}
+
+			std::cout << "Iteration " << std::setfill('0') << std::setw(3) << iterations;
+			std::cout << ": " << std::setfill(' ') << std::setw(5) << movedBlocks << " moves"
+					  << " -> Error: " << error << std::endl;
+		};
 	}
 
 	std::vector<short> findCentroid(const std::vector<std::vector<short>> &cluster)
@@ -150,7 +172,8 @@ class KMeans
 
 	double euclideanDistance(const std::vector<short> &v1, const std::vector<short> &v2)
 	{
-		// TODO: assert vectors are the same size
+		assert(v1.size() == v2.size());
+
 		double result = 0.0;
 		for (size_t i = 0; i < v1.size(); i++)
 		{
@@ -163,7 +186,7 @@ class KMeans
 	void printVector(std::vector<short> &v)
 	{
 		for (auto i : v)
-			std::cout << i << ' ';
+			std::cout << std::setfill(' ') << std::setw(7) << i;
 		std::cout << std::endl;
 	}
 };
