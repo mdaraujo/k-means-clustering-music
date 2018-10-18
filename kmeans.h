@@ -118,6 +118,9 @@ class KMeans
 			if (movedBlocks == 0)
 				break;
 
+			if (iterations > 100)
+				break;
+
 			// move centroids
 			for (size_t i = 0; i < clusters.size(); i++)
 			{

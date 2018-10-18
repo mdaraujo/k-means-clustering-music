@@ -25,3 +25,5 @@ target_link_libraries (wavcmp sndfile)
 add_executable (wavcb wavcb.cpp)
 target_link_libraries (wavcb sndfile)
 
+add_executable (wavfind wavfind.cpp)
+target_link_libraries (wavfind sndfile)

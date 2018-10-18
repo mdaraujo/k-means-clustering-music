@@ -7,3 +7,4 @@ To test:
 	../bin-example/wavquant sample.wav 8 0
 	../bin-example/wavcmp sample.wav sample_quant_nbits6.wav
 	../bin-example/wavcb sample.wav 2 1 3
+	../bin-example/wavfind sample.wav codebooks
