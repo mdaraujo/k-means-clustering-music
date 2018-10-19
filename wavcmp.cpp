@@ -6,8 +6,6 @@
 
 using namespace std;
 
-constexpr size_t FRAMES_BUFFER_SIZE = 65536; // Buffer for reading frames
-
 int validateFile(const SndfileHandle &sndFile)
 {
 	if (sndFile.error())

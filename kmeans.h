@@ -32,7 +32,7 @@ class KMeans
 		blockSize = bs;
 		overlap = ol;
 		k = codebookSize;
-		maxIterations = 10000;
+		maxIterations = 100;
 
 		centroids.resize(k);
 	}
@@ -44,7 +44,10 @@ class KMeans
 		for (size_t i = 0; i < samples.size(); i += blockSize + overlap)
 		{
 			if (i + blockSize >= samples.size())
+			{
+				std::cout << "i: " << i << "  samples size: " << samples.size() << std::endl;
 				break;
+			}
 
 			// define the block
 			blockValues.clear();
@@ -190,6 +193,24 @@ class KMeans
 		for (auto i : v)
 			std::cout << std::setfill(' ') << std::setw(7) << i;
 		std::cout << std::endl;
+	}
+
+	std::vector<short> getModifiedSamples()
+	{
+		std::vector<short> samples(blockSize * blocks.size());
+		std::cout << blockSize * blocks.size() << std::endl;
+
+		size_t sample_idx = 0;
+		for (size_t i = 0; i < blocks.size(); i++)
+		{
+			int cluster = blocks[i].getClusterId();
+			for (int j = 0; j < blockSize; j++)
+			{
+				samples[sample_idx++] = centroids[cluster][j];
+			}
+		}
+		std::cout << sample_idx << std::endl;
+		return samples;
 	}
 };
 

@@ -9,8 +9,8 @@
 
 using namespace std;
 
-//constexpr size_t FRAMES_BUFFER_SIZE = 65536; // Buffer for reading frames
-constexpr size_t FRAMES_BUFFER_SIZE = 136; // Buffer for reading frames
+constexpr size_t FRAMES_BUFFER_SIZE = 65536; // Buffer for reading frames
+//constexpr size_t FRAMES_BUFFER_SIZE = 136; // Buffer for reading frames
 
 int main(int argc, char *argv[])
 {
@@ -56,11 +56,15 @@ int main(int argc, char *argv[])
 	{
 		samples.resize(nFrames * sndFile.channels());
 		kmeans.update(samples);
-		break; // for debug with less frames
 	}
+
+	// vector<short> samples(sndFile.frames() * sndFile.channels());
+	// sndFile.readf(samples.data(), sndFile.frames() * sndFile.channels());
+	// kmeans.update(samples);
 
 	vector<vector<short>> codebook = kmeans.run();
 
+	// dump codebook to file
 	string outFolder = "codebooks";
 	if (mkdir(outFolder.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
 	{
@@ -73,8 +77,8 @@ int main(int argc, char *argv[])
 	}
 
 	ofstream outFile;
-	string outFileName = fileName + "_bs" + to_string(blockSize) + "_ol" + to_string(overlap) + "_k" + to_string(codebookSize) + ".txt";
-	outFile.open(outFolder + "/" + outFileName);
+	string outFileName = fileName + "_bs" + to_string(blockSize) + "_ol" + to_string(overlap) + "_k" + to_string(codebookSize);
+	outFile.open(outFolder + "/" + outFileName + ".txt");
 
 	for (auto block : codebook)
 	{
@@ -83,6 +87,20 @@ int main(int argc, char *argv[])
 		outFile << '\n';
 	}
 	outFile.close();
+
+	// test wav file
+	vector<short> modifiedSamples = kmeans.getModifiedSamples();
+
+	SndfileHandle sndFileOut{outFolder + "/" + outFileName + ".wav", SFM_WRITE,
+							 sndFile.format(), sndFile.channels(), sndFile.samplerate()};
+
+	if (sndFileOut.error())
+	{
+		std::cerr << "Error: invalid output file" << std::endl;
+		return 1;
+	}
+
+	sndFileOut.writef(modifiedSamples.data(), sndFile.frames());
 
 	return 0;
 }

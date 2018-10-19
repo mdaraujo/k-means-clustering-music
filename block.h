@@ -5,11 +5,11 @@
 
 class Block
 {
-  private:
+private:
 	std::vector<short> values;
 	int clusterId;
 
-  public:
+public:
 	Block(const std::vector<short> &values)
 	{
 		this->values = values;
@@ -21,16 +21,15 @@ class Block
 		this->clusterId = clusterId;
 	}
 
-	int getClusterId()
+	int getClusterId() const
 	{
 		return this->clusterId;
 	}
 
-	std::vector<short> getValues()
+	std::vector<short> getValues() const
 	{
 		return this->values;
 	}
-
 };
 
 #endif
