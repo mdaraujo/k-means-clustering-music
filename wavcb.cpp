@@ -48,7 +48,6 @@ int main(int argc, char *argv[])
 	int maxIterations{stoi(argv[argc - 1])};
 	// TODO: Validar inputs
 
-	fileName = fileName.substr(0, fileName.find("."));
 	KMeans kmeans{blockSize, overlap, codebookSize, maxIterations};
 
 	size_t nFrames;
@@ -73,9 +72,18 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	string originalFileName = fileName;
+	fileName = fileName.substr(0, fileName.find("."));
+	string outFileName = fileName + "_" + to_string(blockSize) + "_" + to_string(overlap) + "_" + to_string(codebookSize) + "_" + to_string(maxIterations);
 	ofstream outFile;
-	string outFileName = fileName + "_bs" + to_string(blockSize) + "_ol" + to_string(overlap) + "_k" + to_string(codebookSize);
 	outFile.open(outFolder + "/" + outFileName + ".txt");
+
+	outFile << blockSize << ',';
+	outFile << overlap << ',';
+	outFile << codebookSize << ',';
+	outFile << maxIterations << ',';
+	outFile << kmeans.getError() << ',';
+	outFile << originalFileName << '\n';
 
 	for (auto block : codebook)
 	{

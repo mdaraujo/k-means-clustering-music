@@ -23,6 +23,7 @@ class KMeans
 	// k - numero de clusters (codebook size)
 	int k;
 	int maxIterations;
+	double error;
 
   public:
 	KMeans(const int blockSize, const int overlap, const int k, const int maxIterations)
@@ -73,7 +74,6 @@ class KMeans
 
 		int iterations = 0;
 		int movedBlocks;
-		double error;
 		std::vector<std::vector<short>> newCentroids;
 		std::vector<int> clusterSize;
 
@@ -116,10 +116,7 @@ class KMeans
 				clusterSize[clusterIdx]++;
 			}
 
-			if (movedBlocks == 0)
-				break;
-
-			if (iterations > maxIterations)
+			if (movedBlocks == 0 || iterations > maxIterations)
 				break;
 
 			// move centroids
@@ -188,7 +185,6 @@ class KMeans
 	std::vector<short> getModifiedSamples()
 	{
 		std::vector<short> samples(blockSize * blocks.size());
-		std::cout << blockSize * blocks.size() << std::endl;
 
 		size_t sample_idx = 0;
 		for (size_t i = 0; i < blocks.size(); i++)
@@ -199,8 +195,12 @@ class KMeans
 				samples[sample_idx++] = centroids[cluster][j];
 			}
 		}
-		std::cout << sample_idx << std::endl;
 		return samples;
+	}
+
+	double getError() const
+	{
+		return error;
 	}
 };
 
