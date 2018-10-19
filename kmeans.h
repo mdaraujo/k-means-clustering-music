@@ -5,11 +5,11 @@
 #include <iomanip>
 #include <algorithm>
 #include <assert.h>
-#include <fstream>
 #include <vector>
 #include <tuple>
 #include <math.h>
 #include <limits>
+#include "block.h"
 
 class KMeans
 {
@@ -17,13 +17,14 @@ class KMeans
 	// lista de clusters
 	// cada cluster tem o sua lista de pontos
 	// os pontos tambem sao representados com um vetor
-	std::vector<std::vector<std::vector<short>>> clusters;
+	std::vector<Block> blocks;
 	// ponto central de cada cluster
 	std::vector<std::vector<short>> centroids;
 	int blockSize;
 	int overlap;
-	// k - numero de clusters
+	// k - numero de clusters (codebook size)
 	int k;
+	int maxIterations;
 
   public:
 	KMeans(const int bs, const int ol, const int codebookSize)
@@ -31,136 +32,133 @@ class KMeans
 		blockSize = bs;
 		overlap = ol;
 		k = codebookSize;
+		maxIterations = 10000;
 
-		clusters.resize(k);
 		centroids.resize(k);
-
-		// initialize random centroids
-		// for (int i = 0; i < k; i++)
-		// {
-		// 	std::vector<short> centroid; // random centroid
-		// 	for (int j = 0; j < blockSize; j++)
-		// 	{
-		// 		// generating random shorts - from -32768 to 32767
-		// 		centroid.push_back(rand() % 65535 + -32768);
-		// 	}
-		// 	centroids[i] = centroid;
-		// }
 	}
 
 	void update(const std::vector<short> &samples)
 	{
 		// blockSize + overlap must be multiple of samples.size ??
+		std::vector<short> blockValues;
 		for (size_t i = 0; i < samples.size(); i += blockSize + overlap)
 		{
+			if (i + blockSize >= samples.size())
+				break;
+
 			// define the block
-			std::vector<short> block;
+			blockValues.clear();
 			for (int j = 0; j < blockSize; j++)
 			{
-				block.push_back(samples[i + j]);
+				blockValues.push_back(samples[i + j]);
 			}
-			clusters[0].push_back(block);
+			blocks.push_back(Block(blockValues));
 		}
 	}
 
 	std::vector<std::vector<short>> run()
 	{
-		unsigned int iterations = 0;
-		unsigned int movedBlocks;
-		double error;
-		std::vector<std::tuple<unsigned int, unsigned int>> visitedBlocks;
-
 		// initialize centroids
+		std::vector<short> choosedBlocks;
 		for (int i = 0; i < k; i++)
 		{
-			int randomBlock = rand() % (clusters[0].size() - 1);
-			centroids[i] = clusters[0][randomBlock];
+			// verify block was not already choosen
+			while (true)
+			{
+				int randomBlock = rand() % (blocks.size() - 1);
+
+				// if dont contains the block
+				if (find(choosedBlocks.begin(), choosedBlocks.end(), randomBlock) == choosedBlocks.end())
+				{
+					choosedBlocks.push_back(randomBlock);
+					centroids[i] = blocks[randomBlock].getValues();
+					blocks[randomBlock].setClusterId(i);
+					break;
+				}
+			};
 		}
+
+		int iterations = 0;
+		int movedBlocks;
+		double error;
+		std::vector<std::vector<short>> newCentroids;
+		std::vector<int> clusterSize;
 
 		while (true)
 		{
 			iterations++;
 			movedBlocks = 0;
 			error = 0;
-			visitedBlocks.clear();
+			newCentroids.clear();
+			newCentroids.resize(k);
+			clusterSize.clear();
+			clusterSize.resize(k);
 
-			// assign blocks to better cluster
-			for (size_t i = 0; i < clusters.size(); i++)
+			// assign blocks to the better cluster
+			for (size_t i = 0; i < blocks.size(); i++)
 			{
-				for (size_t j = 0; j < clusters[i].size(); j++)
+				std::vector<short> blockValues = blocks[i].getValues();
+				auto betterCluster = findBetterCluster(blockValues);
+				int clusterIdx = std::get<0>(betterCluster);
+				double dist = std::get<1>(betterCluster);
+
+				// if (dist == 0)
+				// 	std::cout << "Dist -- " << dist << "  Cluster -- " << clusterIdx << std::endl;
+
+				if (clusterIdx != blocks[i].getClusterId())
 				{
-					// check if block was already visited
-					if (std::find(visitedBlocks.begin(), visitedBlocks.end(), std::make_tuple(i, j)) != visitedBlocks.end())
-						continue;
-
-					auto betterCluster = findBetterCluster(clusters[i][j]);
-					unsigned int clusterIdx = std::get<0>(betterCluster);
-
-					if (clusterIdx != i)
-					{
-						movedBlocks++;
-						clusters[clusterIdx].push_back(clusters[i][j]);
-						clusters[i].erase(clusters[i].begin() + j);
-
-						visitedBlocks.push_back(std::make_tuple(clusterIdx, clusters[clusterIdx].size() - 1));
-
-						// in case the erased block in cluster i, influence the position of a visited block
-						for (size_t v = 0; v < visitedBlocks.size(); v++)
-						{
-							if (std::get<0>(visitedBlocks[v]) == i && std::get<1>(visitedBlocks[v]) > j)
-								std::get<1>(visitedBlocks[v])--;
-						}
-					}
-					error += std::get<1>(betterCluster);
+					movedBlocks++;
+					blocks[i].setClusterId(clusterIdx);
 				}
+				error += dist;
+
+				// sum this block values to the correspondent new cluster center
+				if (newCentroids[clusterIdx].empty())
+					newCentroids[clusterIdx].resize(blockSize);
+
+				for (int j = 0; j < blockSize; j++)
+				{
+					newCentroids[clusterIdx][j] += blockValues[j];
+				}
+				clusterSize[clusterIdx]++;
 			}
 
 			if (movedBlocks == 0)
 				break;
 
-			if (iterations > 100)
+			if (iterations > maxIterations)
 				break;
 
 			// move centroids
-			for (size_t i = 0; i < clusters.size(); i++)
+			for (int i = 0; i < k; i++)
 			{
-				centroids[i] = findCentroid(clusters[i]);
-				//printVector(centroids[i]);
+				if (clusterSize[i] == 0)
+				{
+					// std::cout << "Cluster Empty ----- " << i << std::endl;
+					int randomBlock = rand() % (blocks.size() - 1);
+					centroids[i] = blocks[randomBlock].getValues();
+					blocks[randomBlock].setClusterId(i);
+					continue;
+				}
+
+				for (int j = 0; j < blockSize; j++)
+				{
+					centroids[i][j] = newCentroids[i][j] / clusterSize[i];
+				}
 			}
 
 			std::cout << "Iteration " << std::setfill('0') << std::setw(3) << iterations;
 			std::cout << ": " << std::setfill(' ') << std::setw(5) << movedBlocks << " moves"
 					  << " -> Error: " << error << std::endl;
 		};
+		std::cout << "Finished !" << std::endl;
 		return centroids;
 	}
 
-	std::vector<short> findCentroid(const std::vector<std::vector<short>> &cluster)
-	{
-		std::vector<short> centroid;
-		centroid.resize(blockSize);
-
-		if (cluster.size() == 0)
-			return centroid;
-
-		for (size_t i = 0; i < cluster.size(); i++)
-		{
-			for (size_t j = 0; j < cluster[i].size(); j++)
-			{
-				centroid[j] += cluster[i][j];
-			}
-		}
-		for (size_t i = 0; i < centroid.size(); i++)
-		{
-			centroid[i] /= cluster.size();
-		}
-		return centroid;
-	}
-
-	std::tuple<unsigned int, double> findBetterCluster(const std::vector<short> &block)
+	std::tuple<int, double> findBetterCluster(const std::vector<short> &block)
 	{
 		double minDist = std::numeric_limits<double>::max();
-		unsigned int betterCluster = 0;
+		int betterCluster = 0;
 		double dist = 0.0;
 		for (size_t i = 0; i < centroids.size(); i++)
 		{

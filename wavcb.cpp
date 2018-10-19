@@ -1,9 +1,10 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <fstream>
+#include <sys/stat.h>
 #include <sndfile.hh>
 #include <stdio.h>
-#include <sys/stat.h>
 #include "kmeans.h"
 
 using namespace std;
@@ -13,6 +14,7 @@ constexpr size_t FRAMES_BUFFER_SIZE = 136; // Buffer for reading frames
 
 int main(int argc, char *argv[])
 {
+	srand(time(NULL));
 
 	if (argc < 5)
 	{
