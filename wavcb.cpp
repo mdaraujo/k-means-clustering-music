@@ -16,13 +16,13 @@ int main(int argc, char *argv[])
 {
 	srand(time(NULL));
 
-	if (argc < 5)
+	if (argc < 6)
 	{
-		cerr << "Usage: wavhist <input file> <block size> <overlap> <codebook size>" << endl;
+		cerr << "Usage: wavhist <input file> <block size> <overlap> <codebook size> <max iterations>" << endl;
 		return 1;
 	}
 
-	string fileName{argv[argc - 4]};
+	string fileName{argv[argc - 5]};
 	SndfileHandle sndFile{fileName};
 	if (sndFile.error())
 	{
@@ -42,13 +42,14 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	int blockSize{stoi(argv[argc - 3])};
-	int overlap{stoi(argv[argc - 2])};
-	int codebookSize{stoi(argv[argc - 1])};
+	int blockSize{stoi(argv[argc - 4])};
+	int overlap{stoi(argv[argc - 3])};
+	int codebookSize{stoi(argv[argc - 2])};
+	int maxIterations{stoi(argv[argc - 1])};
 	// TODO: Validar inputs
 
 	fileName = fileName.substr(0, fileName.find("."));
-	KMeans kmeans{blockSize, overlap, codebookSize};
+	KMeans kmeans{blockSize, overlap, codebookSize, maxIterations};
 
 	size_t nFrames;
 	vector<short> samples(FRAMES_BUFFER_SIZE * sndFile.channels());
@@ -57,10 +58,6 @@ int main(int argc, char *argv[])
 		samples.resize(nFrames * sndFile.channels());
 		kmeans.update(samples);
 	}
-
-	// vector<short> samples(sndFile.frames() * sndFile.channels());
-	// sndFile.readf(samples.data(), sndFile.frames() * sndFile.channels());
-	// kmeans.update(samples);
 
 	vector<vector<short>> codebook = kmeans.run();
 

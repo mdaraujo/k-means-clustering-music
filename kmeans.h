@@ -14,9 +14,7 @@
 class KMeans
 {
   private:
-	// lista de clusters
-	// cada cluster tem o sua lista de pontos
-	// os pontos tambem sao representados com um vetor
+	// lista dos vetores de comprimento blockSize
 	std::vector<Block> blocks;
 	// ponto central de cada cluster
 	std::vector<std::vector<short>> centroids;
@@ -27,28 +25,20 @@ class KMeans
 	int maxIterations;
 
   public:
-	KMeans(const int bs, const int ol, const int codebookSize)
+	KMeans(const int blockSize, const int overlap, const int k, const int maxIterations)
 	{
-		blockSize = bs;
-		overlap = ol;
-		k = codebookSize;
-		maxIterations = 100;
-
-		centroids.resize(k);
+		this->blockSize = blockSize;
+		this->overlap = overlap;
+		this->k = k;
+		this->maxIterations = maxIterations;
+		this->centroids.resize(k);
 	}
 
 	void update(const std::vector<short> &samples)
 	{
-		// blockSize + overlap must be multiple of samples.size ??
 		std::vector<short> blockValues;
 		for (size_t i = 0; i < samples.size(); i += blockSize + overlap)
 		{
-			if (i + blockSize >= samples.size())
-			{
-				std::cout << "i: " << i << "  samples size: " << samples.size() << std::endl;
-				break;
-			}
-
 			// define the block
 			blockValues.clear();
 			for (int j = 0; j < blockSize; j++)
