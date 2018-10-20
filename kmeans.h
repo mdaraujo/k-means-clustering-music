@@ -91,7 +91,7 @@ class KMeans
 			for (size_t i = 0; i < blocks.size(); i++)
 			{
 				std::vector<short> blockValues = blocks[i].getValues();
-				auto betterCluster = findBetterCluster(blockValues);
+				auto betterCluster = findBetterCluster(centroids, blockValues);
 				int clusterIdx = std::get<0>(betterCluster);
 				double dist = std::get<1>(betterCluster);
 
@@ -145,7 +145,7 @@ class KMeans
 		return centroids;
 	}
 
-	std::tuple<int, double> findBetterCluster(const std::vector<short> &block)
+	static std::tuple<int, double> findBetterCluster(const std::vector<std::vector<short>> &centroids, const std::vector<short> &block)
 	{
 		double minDist = std::numeric_limits<double>::max();
 		int betterCluster = 0;
@@ -162,7 +162,7 @@ class KMeans
 		return std::make_tuple(betterCluster, minDist);
 	}
 
-	double euclideanDistance(const std::vector<short> &v1, const std::vector<short> &v2)
+	static double euclideanDistance(const std::vector<short> &v1, const std::vector<short> &v2)
 	{
 		assert(v1.size() == v2.size());
 

@@ -72,7 +72,12 @@ int main(int argc, char *argv[])
 	}
 
 	string originalFileName = fileName;
-	fileName = fileName.substr(0, fileName.find("."));
+
+	size_t lastDirPos = fileName.find_last_of("/");
+	if (lastDirPos == string::npos)
+		lastDirPos = 0;
+
+	fileName = fileName.substr(lastDirPos, fileName.find_last_of(".") - lastDirPos);
 	string outFileName = fileName + "_" + to_string(blockSize) + "_" + to_string(overlap) + "_" + to_string(codebookSize) + "_" + to_string(maxIterations);
 	ofstream outFile;
 	outFile.open(outFolder + "/" + outFileName + ".txt");
@@ -100,7 +105,7 @@ int main(int argc, char *argv[])
 
 	if (sndFileOut.error())
 	{
-		std::cerr << "Error: invalid output file" << std::endl;
+		cerr << "Error: invalid output file" << endl;
 		return 1;
 	}
 

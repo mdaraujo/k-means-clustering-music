@@ -4,6 +4,7 @@
 #include <string.h>
 #include <sndfile.hh>
 #include <dirent.h>
+#include "kmeans.h"
 
 using namespace std;
 
@@ -18,11 +19,11 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	string fileName{argv[argc - 2]};
-	SndfileHandle sndFile{fileName};
+	string inputFileName{argv[argc - 2]};
+	SndfileHandle sndFile{inputFileName};
 	if (sndFile.error())
 	{
-		cerr << "Error: invalid input file" << endl;
+		cerr << "Error: invalid input file: " << inputFileName << endl;
 		return 1;
 	}
 
@@ -40,12 +41,14 @@ int main(int argc, char *argv[])
 
 	string codebooksPath{argv[argc - 1]};
 	vector<vector<vector<short>>> codebooks;
-	vector<string> filesName;
+	vector<tuple<string, string>> filesNames;
+	vector<short> blocksSizes;
 
 	DIR *dir;
 	struct dirent *ent;
 	if ((dir = opendir(codebooksPath.c_str())) != NULL)
 	{
+		cout << "Reading codebooks" << endl;
 		size_t fileIdx = 0;
 		while ((ent = readdir(dir)) != NULL)
 		{
@@ -57,7 +60,6 @@ int main(int argc, char *argv[])
 				ifstream cbFile(codebooksPath + "/" + fname);
 				if (cbFile.is_open())
 				{
-					int blockSize;
 					int codebookSize = -1;
 					int lineIdx = -1;
 					while (getline(cbFile, line))
@@ -73,11 +75,11 @@ int main(int argc, char *argv[])
 							{
 								value = line.substr(0, pos);
 								if (valueIdx == 0) // blocksize
-									blockSize = stoi(value);
+									blocksSizes.push_back(stoi(value));
 								else if (valueIdx == 2) // codebooksize
 									codebookSize = stoi(value);
 								else if (valueIdx == 5) // file name
-									filesName.push_back(value);
+									filesNames.push_back(make_tuple(fname, value));
 
 								line.erase(0, pos + delimiter.length());
 								valueIdx++;
@@ -92,7 +94,7 @@ int main(int argc, char *argv[])
 							continue;
 						}
 
-						codebooks[fileIdx][lineIdx] = vector<short>(blockSize);
+						codebooks[fileIdx][lineIdx] = vector<short>(blocksSizes[fileIdx]);
 
 						while ((pos = line.find(delimiter)) != string::npos)
 						{
@@ -119,29 +121,61 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	for (size_t i = 0; i < codebooks.size(); i++)
+	// for (size_t i = 0; i < codebooks.size(); i++)
+	// {
+	// 	cout << filesName[i] << endl;
+	// 	int j = 0;
+	// 	for (auto blocks : codebooks[i])
+	// 	{
+	// 		cout << j << "  - ";
+	// 		for (auto value : blocks)
+	// 		{
+	// 			cout << value << ",";
+	// 		}
+	// 		cout << endl;
+	// 		j++;
+	// 	}
+	// 	cout << "\n\n"
+	// 		 << endl;
+	// }
+
+	vector<short> samples(sndFile.frames() * sndFile.channels());
+	sndFile.readf(samples.data(), sndFile.frames() * sndFile.channels()); // read all at once ?
+	// comparar com valor retorno readf
+
+	cout << "Finding best match for " << inputFileName << endl;
+	double minError = numeric_limits<double>::max();
+	int betterCodebook = 0;
+	double error;
+
+	for (size_t cbIdx = 0; cbIdx < codebooks.size(); cbIdx++)
 	{
-		cout << filesName[i] << endl;
-		int j = 0;
-		for (auto blocks : codebooks[i])
+		int blockSize = blocksSizes[cbIdx];
+		error = 0.0;
+
+		std::vector<short> block;
+		for (size_t s = 0; s < samples.size(); s += blockSize)
 		{
-			cout << j << "  - ";
-			for (auto value : blocks)
+			block.clear();
+			for (int j = 0; j < blockSize; j++)
 			{
-				cout << value << ",";
+				block.push_back(samples[s + j]);
 			}
-			cout << endl;
-			j++;
+
+			auto betterCluster = KMeans::findBetterCluster(codebooks[cbIdx], block);
+			error += get<1>(betterCluster);
 		}
-		cout << "\n\n"
-			 << endl;
+
+		cout << "Evaluating file " << get<1>(filesNames[cbIdx]) << " from " << get<0>(filesNames[cbIdx]) << " - Error: " << error << endl;
+
+		if (error < minError)
+		{
+			minError = error;
+			betterCodebook = cbIdx;
+		}
 	}
 
-	// fazer update para ler ficheiro por blocos
-	// ver menor distancia de bloco para todos os vetores do codebook
-	// associar bloco ao vetor code book mais proximo ??
-	// somar as distancias minimas
-	// escolher codebook que tem a distancia total minima
+	cout << inputFileName << " matches better with file " << get<1>(filesNames[betterCodebook]) << " from " << get<0>(filesNames[betterCodebook]) << endl;
 
 	return 0;
 }
