@@ -40,40 +40,71 @@ int main(int argc, char *argv[])
 
 	string codebooksPath{argv[argc - 1]};
 	vector<vector<vector<short>>> codebooks;
+	vector<string> filesName;
+
 	DIR *dir;
 	struct dirent *ent;
 	if ((dir = opendir(codebooksPath.c_str())) != NULL)
 	{
-		size_t cbIdx = 0;
+		size_t fileIdx = 0;
 		while ((ent = readdir(dir)) != NULL)
 		{
 			string fname = {ent->d_name};
 
-			if (fname.size() > 4 && fname.compare(fname.size() - 3, 3, ".txt"))
+			if (fname.size() > 4 && fname.compare(fname.size() - 4, 4, ".txt") == 0)
 			{
-				codebooks.push_back(vector<vector<short>>());
 				string line;
 				ifstream cbFile(codebooksPath + "/" + fname);
 				if (cbFile.is_open())
 				{
-					size_t blockIdx = 0;
+					int blockSize;
+					int codebookSize = -1;
+					int lineIdx = -1;
 					while (getline(cbFile, line))
 					{
-						codebooks[cbIdx].push_back(vector<short>());
 						size_t pos = 0;
 						string value;
 						string delimiter = ",";
+						int valueIdx = 0;
+
+						if (lineIdx == -1)
+						{
+							while ((pos = line.find(delimiter)) != string::npos)
+							{
+								value = line.substr(0, pos);
+								if (valueIdx == 0) // blocksize
+									blockSize = stoi(value);
+								else if (valueIdx == 2) // codebooksize
+									codebookSize = stoi(value);
+								else if (valueIdx == 5) // file name
+									filesName.push_back(value);
+
+								line.erase(0, pos + delimiter.length());
+								valueIdx++;
+							}
+							if (codebookSize == -1)
+							{
+								cerr << "Invalid codebook file structure" << endl;
+								return 1;
+							}
+							codebooks.push_back(vector<vector<short>>(codebookSize));
+							lineIdx++;
+							continue;
+						}
+
+						codebooks[fileIdx][lineIdx] = vector<short>(blockSize);
+
 						while ((pos = line.find(delimiter)) != string::npos)
 						{
 							value = line.substr(0, pos);
-							codebooks[cbIdx][blockIdx].push_back(stoi(value));
-							cout << value << endl;
+							codebooks[fileIdx][lineIdx][valueIdx] = stoi(value);
 							line.erase(0, pos + delimiter.length());
+							valueIdx++;
 						}
-						blockIdx++;
+						lineIdx++;
 					}
 					cbFile.close();
-					cbIdx++;
+					fileIdx++;
 				}
 				else
 					cerr << "Unable to open file" << fname << endl;
@@ -86,6 +117,24 @@ int main(int argc, char *argv[])
 		/* could not open directory */
 		perror("");
 		return EXIT_FAILURE;
+	}
+
+	for (size_t i = 0; i < codebooks.size(); i++)
+	{
+		cout << filesName[i] << endl;
+		int j = 0;
+		for (auto blocks : codebooks[i])
+		{
+			cout << j << "  - ";
+			for (auto value : blocks)
+			{
+				cout << value << ",";
+			}
+			cout << endl;
+			j++;
+		}
+		cout << "\n\n"
+			 << endl;
 	}
 
 	// fazer update para ler ficheiro por blocos

@@ -10,7 +10,6 @@
 using namespace std;
 
 constexpr size_t FRAMES_BUFFER_SIZE = 65536; // Buffer for reading frames
-//constexpr size_t FRAMES_BUFFER_SIZE = 136; // Buffer for reading frames
 
 int main(int argc, char *argv[])
 {
@@ -83,7 +82,7 @@ int main(int argc, char *argv[])
 	outFile << codebookSize << ',';
 	outFile << maxIterations << ',';
 	outFile << kmeans.getError() << ',';
-	outFile << originalFileName << '\n';
+	outFile << originalFileName << "," << endl;
 
 	for (auto block : codebook)
 	{
