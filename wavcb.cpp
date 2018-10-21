@@ -15,13 +15,13 @@ int main(int argc, char *argv[])
 {
 	srand(time(NULL));
 
-	if (argc < 6)
+	if (argc < 7)
 	{
-		cerr << "Usage: wavhist <input file> <block size> <overlap> <codebook size> <max iterations>" << endl;
+		cerr << "Usage: wavhist <input file> <block size> <overlap> <codebook size> <max iterations> <number of runs>" << endl;
 		return 1;
 	}
 
-	string fileName{argv[argc - 5]};
+	string fileName{argv[argc - 6]};
 	SndfileHandle sndFile{fileName};
 	if (sndFile.error())
 	{
@@ -41,14 +41,17 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	int blockSize{stoi(argv[argc - 4])};
-	int overlap{stoi(argv[argc - 3])};
-	int codebookSize{stoi(argv[argc - 2])};
-	int maxIterations{stoi(argv[argc - 1])};
+	int blockSize{stoi(argv[argc - 5])};
+	int overlap{stoi(argv[argc - 4])};
+	int codebookSize{stoi(argv[argc - 3])};
+	int maxIterations{stoi(argv[argc - 2])};
+	int nRuns{stoi(argv[argc - 1])};
 	// TODO: Validar inputs
 
 	KMeans kmeans{blockSize, overlap, codebookSize, maxIterations};
 
+	cout << "Reading file " << fileName << endl
+		 << endl;
 	size_t nFrames;
 	vector<short> samples(FRAMES_BUFFER_SIZE * sndFile.channels());
 	while ((nFrames = sndFile.readf(samples.data(), FRAMES_BUFFER_SIZE)))
@@ -57,7 +60,25 @@ int main(int argc, char *argv[])
 		kmeans.update(samples);
 	}
 
-	vector<vector<short>> codebook = kmeans.run();
+	vector<vector<short>> codebook;
+	vector<short> modifiedSamples; // samples to generate the test wav file
+	double minError = numeric_limits<double>::max();
+	for (int i = 0; i < nRuns; i++)
+	{
+		cout << "Beginning run " << i + 1 << "/" << nRuns << " for file " << fileName << endl;
+		auto tempCodebook = kmeans.run();
+		double error = kmeans.getError();
+		if (error < minError)
+		{
+			minError = error;
+			codebook = tempCodebook;
+			modifiedSamples = kmeans.getModifiedSamples();
+		}
+		//KMeans::printCodebook(temp);
+		cout << "Error: " << error << endl
+			 << endl;
+	}
+	cout << "Best Error: " << minError << endl;
 
 	// dump codebook to file
 	string outFolder = "codebooks";
@@ -78,15 +99,18 @@ int main(int argc, char *argv[])
 		lastDirPos = 0;
 
 	fileName = fileName.substr(lastDirPos, fileName.find_last_of(".") - lastDirPos);
-	string outFileName = fileName + "_" + to_string(blockSize) + "_" + to_string(overlap) + "_" + to_string(codebookSize) + "_" + to_string(maxIterations);
+	string outFileName = fileName + "_" + to_string(blockSize) + "_" + to_string(overlap) + "_";
+	outFileName += to_string(codebookSize) + "_" + to_string(maxIterations) + "_" + to_string(nRuns);
+
 	ofstream outFile;
 	outFile.open(outFolder + "/" + outFileName + ".txt");
 
+	// dump all metadata (only blocksize and codebookSize are really needed)
 	outFile << blockSize << ',';
 	outFile << overlap << ',';
 	outFile << codebookSize << ',';
 	outFile << maxIterations << ',';
-	outFile << kmeans.getError() << ',';
+	outFile << minError << ',';
 	outFile << originalFileName << "," << endl;
 
 	for (auto block : codebook)
@@ -98,7 +122,6 @@ int main(int argc, char *argv[])
 	outFile.close();
 
 	// test wav file
-	vector<short> modifiedSamples = kmeans.getModifiedSamples();
 
 	SndfileHandle sndFileOut{outFolder + "/" + outFileName + ".wav", SFM_WRITE,
 							 sndFile.format(), sndFile.channels(), sndFile.samplerate()};

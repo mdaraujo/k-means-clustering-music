@@ -121,24 +121,6 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	// for (size_t i = 0; i < codebooks.size(); i++)
-	// {
-	// 	cout << filesName[i] << endl;
-	// 	int j = 0;
-	// 	for (auto blocks : codebooks[i])
-	// 	{
-	// 		cout << j << "  - ";
-	// 		for (auto value : blocks)
-	// 		{
-	// 			cout << value << ",";
-	// 		}
-	// 		cout << endl;
-	// 		j++;
-	// 	}
-	// 	cout << "\n\n"
-	// 		 << endl;
-	// }
-
 	vector<short> samples(sndFile.frames() * sndFile.channels());
 	sndFile.readf(samples.data(), sndFile.frames() * sndFile.channels()); // read all at once ?
 	// comparar com valor retorno readf

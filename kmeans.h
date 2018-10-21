@@ -116,7 +116,11 @@ class KMeans
 				clusterSize[clusterIdx]++;
 			}
 
-			if (movedBlocks == 0 || iterations > maxIterations)
+			std::cout << "Iteration " << std::setfill('0') << std::setw(3) << iterations;
+			std::cout << ": " << std::setfill(' ') << std::setw(5) << movedBlocks << " moves"
+					  << " -> Error: " << error << std::endl;
+
+			if (movedBlocks == 0 || iterations >= maxIterations)
 				break;
 
 			// move centroids
@@ -136,12 +140,8 @@ class KMeans
 					centroids[i][j] = newCentroids[i][j] / clusterSize[i];
 				}
 			}
-
-			std::cout << "Iteration " << std::setfill('0') << std::setw(3) << iterations;
-			std::cout << ": " << std::setfill(' ') << std::setw(5) << movedBlocks << " moves"
-					  << " -> Error: " << error << std::endl;
 		};
-		std::cout << "Finished !" << std::endl;
+		std::cout << "Finished." << std::endl;
 		return centroids;
 	}
 
@@ -175,7 +175,16 @@ class KMeans
 		return result > 0.0 ? sqrt(result) : 0.0;
 	}
 
-	void printVector(std::vector<short> &v)
+	static void printCodebook(const std::vector<std::vector<short>> &codebook)
+	{
+		for (size_t i = 0; i < codebook.size(); i++)
+		{
+			std::cout << i << "  - ";
+			printVector(codebook[i]);
+		}
+	}
+
+	static void printVector(const std::vector<short> &v)
 	{
 		for (auto i : v)
 			std::cout << std::setfill(' ') << std::setw(7) << i;
