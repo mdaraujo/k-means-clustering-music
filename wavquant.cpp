@@ -11,10 +11,9 @@ constexpr size_t FRAMES_BUFFER_SIZE = 65536; // Buffer for reading frames
 
 int main(int argc, char *argv[])
 {
-
 	if (argc < 4)
 	{
-		cerr << "Usage: wavhist <input file> <number of bits> <channel?>" << endl;
+		cerr << "Usage: wavquant <input file> <number of bits> <channel>" << endl;
 		return 1;
 	}
 
@@ -39,9 +38,12 @@ int main(int argc, char *argv[])
 	}
 
 	int numBits{stoi(argv[argc - 2])};
-	// TODO: Validar numero de bits - n <= 16
+	if (numBits > 16 || numBits < 1)
+	{
+		cerr << "Error: invalid number of bits" << endl;
+		return 1;
+	}
 
-	// TODO: if channel not passed as arg, dont dump text
 	int channel{stoi(argv[argc - 1])};
 	if (channel >= sndFile.channels())
 	{
@@ -49,7 +51,12 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	fileName = fileName.substr(0, fileName.find("."));
+	size_t lastDirPos = fileName.find_last_of("/");
+	if (lastDirPos == string::npos)
+		lastDirPos = 0;
+
+	fileName = fileName.substr(lastDirPos, fileName.find_last_of(".") - lastDirPos);
+
 	string outFolder = "quants";
 	if (mkdir(outFolder.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
 	{
@@ -71,7 +78,6 @@ int main(int argc, char *argv[])
 		quant.update(samples);
 	}
 
-	// TODO: if channel not passed as arg, dont dump text
 	quant.dump_to_text_file(channel);
 
 	quant.dump_to_wav_file();

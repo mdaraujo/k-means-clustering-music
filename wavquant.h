@@ -46,24 +46,24 @@ class WAVQuant
 	void dump_to_text_file(const size_t channel) const
 	{
 		std::ofstream file;
-		std::string filename = fileName + "_quant_nbits" + std::to_string(numBits) + "_ch" + std::to_string(channel) + ".txt";
-		file.open(filename);
+		std::string outfilename = fileName + "_quant_nbits" + std::to_string(numBits) + "_ch" + std::to_string(channel) + ".txt";
+		file.open(outfilename);
 
 		double sec = 0;
 		double inc = (double)1 / samplerate;
-		//std::cout.precision(8);
 		for (auto value : channels[channel])
 		{
 			file << std::fixed << sec << '\t' << value << '\n';
 			sec += inc;
 		}
 		file.close();
+		std::cout << "Dump in " << outfilename << std::endl;
 	}
 
 	void dump_to_wav_file() const
 	{
-		SndfileHandle sndFileOut{fileName + "_quant_nbits" + std::to_string(numBits) + ".wav",
-								 SFM_WRITE, format, numChannels, samplerate};
+		std::string outfilename = fileName + "_quant_nbits" + std::to_string(numBits) + ".wav";
+		SndfileHandle sndFileOut{outfilename, SFM_WRITE, format, numChannels, samplerate};
 
 		if (sndFileOut.error())
 		{
@@ -77,15 +77,13 @@ class WAVQuant
 		size_t sample_idx = 0;
 		for (i = 0; i < channels[0].size(); i++)
 		{
-			// TODO: generalizar para qlq numero de canais
-			samples[sample_idx++] = channels[0][i];
-			samples[sample_idx++] = channels[1][i];
+			for (size_t j = 0; j < channels.size(); j++)
+			{
+				samples[sample_idx++] = channels[j][i];
+			}
 		}
-		std::cout << i << std::endl;
-		std::cout << sample_idx << std::endl;
-		std::cout << numFrames << std::endl;
-
 		sndFileOut.writef(samples.data(), numFrames);
+		std::cout << "Dump in " << outfilename << std::endl;
 	}
 };
 
