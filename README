@@ -3,7 +3,7 @@ To build:
 
 To test:
 	../bin-example/wavcp sample.wav copy.wav // copies "sample.wav" into "copy.wav"
-	../bin-example/wavhist sample.wav 0 // outputs the histogram of channel 0 (left)
+	../bin-example/wavhist sample.wav 0 // outputs the histogram of channel 0 (left) and the mono version
 	../bin-example/wavquant sample.wav 8 0
 	../bin-example/wavcmp sample.wav sample_quant_nbits6.wav
 	../bin-example/wavcb samples/sample04.wav 16 0 256 100 3

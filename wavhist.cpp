@@ -16,7 +16,8 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	SndfileHandle sndFile{argv[argc - 2]};
+	string fileName = argv[argc - 2];
+	SndfileHandle sndFile{fileName};
 	if (sndFile.error())
 	{
 		cerr << "Error: invalid input file" << endl;
@@ -42,9 +43,11 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	fileName = fileName.substr(0, fileName.find_last_of("."));
+
 	size_t nFrames;
 	vector<short> samples(FRAMES_BUFFER_SIZE * sndFile.channels());
-	WAVHist hist{sndFile};
+	WAVHist hist{sndFile, fileName};
 	while ((nFrames = sndFile.readf(samples.data(), FRAMES_BUFFER_SIZE)))
 	{
 		samples.resize(nFrames * sndFile.channels());
@@ -52,9 +55,11 @@ int main(int argc, char *argv[])
 	}
 
 	// hist.dump(channel);
-	hist.dump_to_file(channel);
+	hist.dump_channel_to_file(channel);
 	// gnuplot
-	// plot "hist.txt"
+	// plot "sample_hist_ch_1.txt"
+
+	hist.dump_mono_to_file();
 
 	return 0;
 }
