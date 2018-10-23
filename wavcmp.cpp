@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
 {
 	if (argc < 3)
 	{
-		cerr << "Usage: wavhist <input file> <original file>" << endl;
+		cerr << "Usage: wavcmp <input file> <original file>" << endl;
 		return 1;
 	}
 
@@ -43,10 +43,14 @@ int main(int argc, char *argv[])
 	if (validateFile(inputFile) == 1)
 		return 1;
 
-	// dividir por channel ??
 	vector<short> inputSamples(inputFile.frames() * inputFile.channels());
-	inputFile.readf(inputSamples.data(), inputFile.frames() * inputFile.channels()); // read all at once ?
-	// comparar com valor retorno readf
+	int nFrames = inputFile.readf(inputSamples.data(), inputFile.frames() * inputFile.channels());
+
+	if (nFrames != inputFile.frames())
+	{
+		cerr << "Error reading input file" << endl;
+		return 1;
+	}
 
 	string originalFileName = argv[argc - 1];
 	cout << "Reading original file " << originalFileName << " ..." << endl;
@@ -56,14 +60,35 @@ int main(int argc, char *argv[])
 		return 1;
 
 	vector<short> originalSamples(originalFile.frames() * originalFile.channels());
-	originalFile.readf(originalSamples.data(), originalFile.frames() * originalFile.channels());
+	nFrames = originalFile.readf(originalSamples.data(), originalFile.frames() * originalFile.channels());
+
+	if (nFrames != originalFile.frames())
+	{
+		cerr << "Error reading original file" << endl;
+		return 1;
+	}
+
+	if (inputFile.frames() != originalFile.frames())
+	{
+		cerr << "Error: the files do not have the same number of frames" << endl;
+		return 1;
+	}
 
 	double signalEnergy = 0;
 	double noiseEnergy = 0;
+	double error;
+	double maxError = 0;
 	for (size_t i = 0; i < originalSamples.size(); i++)
 	{
 		signalEnergy += pow(originalSamples[i], 2);
-		noiseEnergy += pow(originalSamples[i] - inputSamples[i], 2);
+
+		error = abs(originalSamples[i] - inputSamples[i]);
+		noiseEnergy += pow(error, 2);
+
+		if (error > maxError)
+		{
+			maxError = error;
+		}
 	}
 	cout << "Signal Energy: " << signalEnergy << endl;
 	cout << "Noise Energy: " << noiseEnergy << endl;
@@ -71,6 +96,8 @@ int main(int argc, char *argv[])
 	double snr = 10 * log10(signalEnergy / noiseEnergy);
 
 	cout << "SNR: " << snr << endl;
+
+	cout << "Max Error: " << maxError << endl;
 
 	return 0;
 }
