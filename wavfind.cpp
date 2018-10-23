@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
 									blocksSizes.push_back(stoi(value));
 								else if (valueIdx == 2) // codebooksize
 									codebookSize = stoi(value);
-								else if (valueIdx == 5) // file name
+								else if (valueIdx == 6) // file name
 									filesNames.push_back(make_tuple(fname, value));
 
 								line.erase(0, pos + delimiter.length());
@@ -136,6 +136,8 @@ int main(int argc, char *argv[])
 		error = 0.0;
 
 		std::vector<short> block;
+		// como podem existir codebooks com blocksizes diferentes no mesmo diretorio
+		// as samples originais sao lidas por cada codebook de acordo com o seu blocksize
 		for (size_t s = 0; s < samples.size(); s += blockSize)
 		{
 			block.clear();
@@ -157,6 +159,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	cout << "Best error: " << minError << endl;
 	cout << inputFileName << " matches better with file " << get<1>(filesNames[betterCodebook]) << " from " << get<0>(filesNames[betterCodebook]) << endl;
 
 	return 0;

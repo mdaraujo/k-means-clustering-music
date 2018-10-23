@@ -73,14 +73,15 @@ class KMeans
 		}
 
 		int iterations = 0;
-		int movedBlocks;
+		int emptyClusters = 0;
+		bool finished;
 		std::vector<std::vector<short>> newCentroids;
 		std::vector<int> clusterSize;
 
 		while (true)
 		{
 			iterations++;
-			movedBlocks = 0;
+			finished = true;
 			error = 0;
 			newCentroids.clear();
 			newCentroids.resize(k);
@@ -100,8 +101,8 @@ class KMeans
 
 				if (clusterIdx != blocks[i].getClusterId())
 				{
-					movedBlocks++;
 					blocks[i].setClusterId(clusterIdx);
+					finished = false;
 				}
 				error += dist;
 
@@ -117,10 +118,11 @@ class KMeans
 			}
 
 			std::cout << "Iteration " << std::setfill('0') << std::setw(3) << iterations;
-			std::cout << ": " << std::setfill(' ') << std::setw(5) << movedBlocks << " moves"
-					  << " -> Error: " << error << std::endl;
+			std::cout << " -> Error: " << std::setfill(' ') << std::setw(9) << error << std::endl;
 
-			if (movedBlocks == 0 || iterations >= maxIterations)
+			// have to stop before moving centroids,
+			// so the blocks are with the better centroid and the wav file can be reproduced
+			if (finished || iterations >= maxIterations)
 				break;
 
 			// move centroids
@@ -128,7 +130,8 @@ class KMeans
 			{
 				if (clusterSize[i] == 0)
 				{
-					// std::cout << "Cluster Empty ----- " << i << std::endl;
+					emptyClusters++;
+					//std::cout << "Cluster Empty ----- " << i << std::endl;
 					int randomBlock = rand() % (blocks.size() - 1);
 					centroids[i] = blocks[randomBlock].getValues();
 					blocks[randomBlock].setClusterId(i);
@@ -138,10 +141,13 @@ class KMeans
 				for (int j = 0; j < blockSize; j++)
 				{
 					centroids[i][j] = newCentroids[i][j] / clusterSize[i];
+					//std::cout << "Debug: " << newCentroids[i][j] << " / " << clusterSize[i] << " -> " << newCentroids[i][j] / clusterSize[i] << std::endl;
 				}
 			}
 		};
-		std::cout << "Finished." << std::endl;
+
+		emptyClusters /= maxIterations;
+		std::cout << "Empty clusters mean: " << emptyClusters << " / " << k << " -> " << (double)emptyClusters / k << std::endl;
 		return centroids;
 	}
 

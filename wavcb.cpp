@@ -5,9 +5,11 @@
 #include <sys/stat.h>
 #include <sndfile.hh>
 #include <stdio.h>
+#include <chrono>
 #include "kmeans.h"
 
 using namespace std;
+using namespace std::chrono;
 
 constexpr size_t FRAMES_BUFFER_SIZE = 65536; // Buffer for reading frames
 
@@ -17,7 +19,7 @@ int main(int argc, char *argv[])
 
 	if (argc < 7)
 	{
-		cerr << "Usage: wavhist <input file> <block size> <overlap> <codebook size> <max iterations> <number of runs>" << endl;
+		cerr << "Usage: wavcb <input file> <block size> <overlap> <codebook size> <max iterations> <number of runs>" << endl;
 		return 1;
 	}
 
@@ -50,8 +52,14 @@ int main(int argc, char *argv[])
 
 	KMeans kmeans{blockSize, overlap, codebookSize, maxIterations};
 
-	cout << "Reading file " << fileName << endl
+	cout << "File: " << fileName << endl
+		 << "Block size: " << blockSize << endl
+		 << "Overlap: " << overlap << endl
+		 << "K: " << codebookSize << endl
+		 << "Max iterations: " << maxIterations << endl
+		 << "Number of kmeans runs: " << nRuns << endl
 		 << endl;
+
 	size_t nFrames;
 	vector<short> samples(FRAMES_BUFFER_SIZE * sndFile.channels());
 	while ((nFrames = sndFile.readf(samples.data(), FRAMES_BUFFER_SIZE)))
@@ -60,13 +68,18 @@ int main(int argc, char *argv[])
 		kmeans.update(samples);
 	}
 
+	double totalTime = 0;
 	vector<vector<short>> codebook;
 	vector<short> modifiedSamples; // samples to generate the test wav file
 	double minError = numeric_limits<double>::max();
 	for (int i = 0; i < nRuns; i++)
 	{
 		cout << "Beginning run " << i + 1 << "/" << nRuns << " for file " << fileName << endl;
+		high_resolution_clock::time_point t1 = high_resolution_clock::now();
 		auto tempCodebook = kmeans.run();
+		high_resolution_clock::time_point t2 = high_resolution_clock::now();
+		duration<double> timeSpan = duration_cast<duration<double>>(t2 - t1);
+
 		double error = kmeans.getError();
 		if (error < minError)
 		{
@@ -75,10 +88,18 @@ int main(int argc, char *argv[])
 			modifiedSamples = kmeans.getModifiedSamples();
 		}
 		//KMeans::printCodebook(temp);
-		cout << "Error: " << error << endl
+		cout << "Finished run " << i + 1 << "/" << nRuns << " for file " << fileName << endl;
+		cout << "Error: " << error << endl;
+		cout << "It took " << timeSpan.count() << " seconds for " << maxIterations << " iterations." << endl
 			 << endl;
+		t1 = t2;
+		totalTime += timeSpan.count();
 	}
 	cout << "Best Error: " << minError << endl;
+	cout << "It took " << totalTime << " seconds for " << nRuns << " runs of " << maxIterations << " iterations each." << endl
+		 << "File frames: " << sndFile.frames() << endl
+		 << "K: " << codebookSize << endl
+		 << endl;
 
 	// dump codebook to file
 	string outFolder = "codebooks";
@@ -110,8 +131,12 @@ int main(int argc, char *argv[])
 	outFile << overlap << ',';
 	outFile << codebookSize << ',';
 	outFile << maxIterations << ',';
+	outFile << nRuns << ',';
 	outFile << minError << ',';
-	outFile << originalFileName << "," << endl;
+	outFile << originalFileName << ',';
+	// processing time measures
+	outFile << sndFile.frames() << ',';
+	outFile << totalTime << ',' << '\n';
 
 	for (auto block : codebook)
 	{
@@ -122,7 +147,6 @@ int main(int argc, char *argv[])
 	outFile.close();
 
 	// test wav file
-
 	SndfileHandle sndFileOut{outFolder + "/" + outFileName + ".wav", SFM_WRITE,
 							 sndFile.format(), sndFile.channels(), sndFile.samplerate()};
 
