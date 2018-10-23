@@ -17,13 +17,14 @@ class KMeans
 	// lista dos vetores de comprimento blockSize
 	std::vector<Block> blocks;
 	// ponto central de cada cluster
-	std::vector<std::vector<short>> centroids;
+	std::vector<std::vector<double>> centroids;
 	int blockSize;
 	int overlap;
 	// k - numero de clusters (codebook size)
 	int k;
 	int maxIterations;
 	double error;
+	const int minimumErrorDiff = 2000;
 
   public:
 	KMeans(const int blockSize, const int overlap, const int k, const int maxIterations)
@@ -50,7 +51,7 @@ class KMeans
 		}
 	}
 
-	std::vector<std::vector<short>> run()
+	std::vector<std::vector<double>> run()
 	{
 		// initialize centroids
 		std::vector<short> choosedBlocks;
@@ -65,7 +66,7 @@ class KMeans
 				if (find(choosedBlocks.begin(), choosedBlocks.end(), randomBlock) == choosedBlocks.end())
 				{
 					choosedBlocks.push_back(randomBlock);
-					centroids[i] = blocks[randomBlock].getValues();
+					centroids[i] = blocks[randomBlock].getDoubleValues();
 					blocks[randomBlock].setClusterId(i);
 					break;
 				}
@@ -73,9 +74,9 @@ class KMeans
 		}
 
 		int iterations = 0;
-		int emptyClusters = 0;
+		double lastError = std::numeric_limits<double>::max();
 		bool finished;
-		std::vector<std::vector<short>> newCentroids;
+		std::vector<std::vector<double>> newCentroids;
 		std::vector<int> clusterSize;
 
 		while (true)
@@ -95,9 +96,6 @@ class KMeans
 				auto betterCluster = findBetterCluster(centroids, blockValues);
 				int clusterIdx = std::get<0>(betterCluster);
 				double dist = std::get<1>(betterCluster);
-
-				// if (dist == 0)
-				// 	std::cout << "Dist -- " << dist << "  Cluster -- " << clusterIdx << std::endl;
 
 				if (clusterIdx != blocks[i].getClusterId())
 				{
@@ -122,18 +120,32 @@ class KMeans
 
 			// have to stop before moving centroids,
 			// so the blocks are with the better centroid and the wav file can be reproduced
-			if (finished || iterations >= maxIterations)
+			if (finished)
+			{
+				std::cout << "Zero blocks moved, convergion complete." << std::endl;
 				break;
+			}
+			if (iterations >= maxIterations)
+			{
+				std::cout << "Maximum number of iterations reached." << std::endl;
+				break;
+			}
+			if (lastError - error < minimumErrorDiff)
+			{
+				std::cout << "Minimum error difference of " << minimumErrorDiff << " reached." << std::endl;
+				break;
+			}
+
+			lastError = error;
 
 			// move centroids
 			for (int i = 0; i < k; i++)
 			{
 				if (clusterSize[i] == 0)
 				{
-					emptyClusters++;
-					//std::cout << "Cluster Empty ----- " << i << std::endl;
+					// runs faster if a random block is choosen to occupy an empty cluser
 					int randomBlock = rand() % (blocks.size() - 1);
-					centroids[i] = blocks[randomBlock].getValues();
+					centroids[i] = blocks[randomBlock].getDoubleValues();
 					blocks[randomBlock].setClusterId(i);
 					continue;
 				}
@@ -141,17 +153,14 @@ class KMeans
 				for (int j = 0; j < blockSize; j++)
 				{
 					centroids[i][j] = newCentroids[i][j] / clusterSize[i];
-					//std::cout << "Debug: " << newCentroids[i][j] << " / " << clusterSize[i] << " -> " << newCentroids[i][j] / clusterSize[i] << std::endl;
 				}
 			}
 		};
 
-		emptyClusters /= maxIterations;
-		std::cout << "Empty clusters mean: " << emptyClusters << " / " << k << " -> " << (double)emptyClusters / k << std::endl;
 		return centroids;
 	}
 
-	static std::tuple<int, double> findBetterCluster(const std::vector<std::vector<short>> &centroids, const std::vector<short> &block)
+	static std::tuple<int, double> findBetterCluster(const std::vector<std::vector<double>> &centroids, const std::vector<short> &block)
 	{
 		double minDist = std::numeric_limits<double>::max();
 		int betterCluster = 0;
@@ -168,7 +177,7 @@ class KMeans
 		return std::make_tuple(betterCluster, minDist);
 	}
 
-	static double euclideanDistance(const std::vector<short> &v1, const std::vector<short> &v2)
+	static double euclideanDistance(const std::vector<double> &v1, const std::vector<short> &v2)
 	{
 		assert(v1.size() == v2.size());
 

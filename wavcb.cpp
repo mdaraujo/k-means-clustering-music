@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
 	}
 
 	double totalTime = 0;
-	vector<vector<short>> codebook;
+	vector<vector<double>> codebook;
 	vector<short> modifiedSamples; // samples to generate the test wav file
 	double minError = numeric_limits<double>::max();
 	for (int i = 0; i < nRuns; i++)
@@ -88,15 +88,15 @@ int main(int argc, char *argv[])
 			modifiedSamples = kmeans.getModifiedSamples();
 		}
 		//KMeans::printCodebook(temp);
-		cout << "Finished run " << i + 1 << "/" << nRuns << " for file " << fileName << endl;
 		cout << "Error: " << error << endl;
-		cout << "It took " << timeSpan.count() << " seconds for " << maxIterations << " iterations." << endl
+		cout << "Finished run " << i + 1 << "/" << nRuns << " for file " << fileName << endl;
+		cout << "It took " << timeSpan.count() << " seconds." << endl
 			 << endl;
 		t1 = t2;
 		totalTime += timeSpan.count();
 	}
 	cout << "Best Error: " << minError << endl;
-	cout << "It took " << totalTime << " seconds for " << nRuns << " runs of " << maxIterations << " iterations each." << endl
+	cout << "It took " << totalTime << " seconds for " << nRuns << " runs." << endl
 		 << "File frames: " << sndFile.frames() << endl
 		 << "K: " << codebookSize << endl
 		 << endl;

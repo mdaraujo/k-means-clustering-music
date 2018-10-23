@@ -5,11 +5,11 @@
 
 class Block
 {
-private:
+  private:
 	std::vector<short> values;
 	int clusterId;
 
-public:
+  public:
 	Block(const std::vector<short> &values)
 	{
 		this->values = values;
@@ -29,6 +29,12 @@ public:
 	std::vector<short> getValues() const
 	{
 		return this->values;
+	}
+
+	std::vector<double> getDoubleValues() const
+	{
+		std::vector<double> doubleVec(values.begin(), values.end());
+		return doubleVec;
 	}
 };
 
