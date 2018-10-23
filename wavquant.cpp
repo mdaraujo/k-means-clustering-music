@@ -53,7 +53,9 @@ int main(int argc, char *argv[])
 
 	size_t lastDirPos = fileName.find_last_of("/");
 	if (lastDirPos == string::npos)
-		lastDirPos = 0;
+		lastDirPos = -1;
+
+	lastDirPos++; // ignore '/'
 
 	fileName = fileName.substr(lastDirPos, fileName.find_last_of(".") - lastDirPos);
 
