@@ -30,12 +30,6 @@ class Block
 	{
 		return this->values;
 	}
-
-	std::vector<double> getDoubleValues() const
-	{
-		std::vector<double> doubleVec(values.begin(), values.end());
-		return doubleVec;
-	}
 };
 
 #endif

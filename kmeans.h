@@ -17,14 +17,14 @@ class KMeans
 	// lista dos vetores de comprimento blockSize
 	std::vector<Block> blocks;
 	// ponto central de cada cluster
-	std::vector<std::vector<double>> centroids;
+	std::vector<std::vector<short>> centroids;
 	int blockSize;
 	int overlap;
 	// k - numero de clusters (codebook size)
 	int k;
 	int maxIterations;
 	double error;
-	const int minimumErrorDiff = 2000;
+	const int minimumErrorDiff = 1000;
 
   public:
 	KMeans(const int blockSize, const int overlap, const int k, const int maxIterations)
@@ -51,7 +51,7 @@ class KMeans
 		}
 	}
 
-	std::vector<std::vector<double>> run()
+	std::vector<std::vector<short>> run()
 	{
 		// initialize centroids
 		std::vector<short> choosedBlocks;
@@ -66,7 +66,7 @@ class KMeans
 				if (find(choosedBlocks.begin(), choosedBlocks.end(), randomBlock) == choosedBlocks.end())
 				{
 					choosedBlocks.push_back(randomBlock);
-					centroids[i] = blocks[randomBlock].getDoubleValues();
+					centroids[i] = blocks[randomBlock].getValues();
 					blocks[randomBlock].setClusterId(i);
 					break;
 				}
@@ -145,7 +145,7 @@ class KMeans
 				{
 					// runs faster if a random block is choosen to occupy an empty cluser
 					int randomBlock = rand() % (blocks.size() - 1);
-					centroids[i] = blocks[randomBlock].getDoubleValues();
+					centroids[i] = blocks[randomBlock].getValues();
 					blocks[randomBlock].setClusterId(i);
 					continue;
 				}
@@ -160,7 +160,7 @@ class KMeans
 		return centroids;
 	}
 
-	static std::tuple<int, double> findBetterCluster(const std::vector<std::vector<double>> &centroids, const std::vector<short> &block)
+	static std::tuple<int, double> findBetterCluster(const std::vector<std::vector<short>> &centroids, const std::vector<short> &block)
 	{
 		double minDist = std::numeric_limits<double>::max();
 		int betterCluster = 0;
@@ -177,7 +177,7 @@ class KMeans
 		return std::make_tuple(betterCluster, minDist);
 	}
 
-	static double euclideanDistance(const std::vector<double> &v1, const std::vector<short> &v2)
+	static double euclideanDistance(const std::vector<short> &v1, const std::vector<short> &v2)
 	{
 		assert(v1.size() == v2.size());
 

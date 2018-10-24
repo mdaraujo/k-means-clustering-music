@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
 	}
 
 	string codebooksPath{argv[argc - 1]};
-	vector<vector<vector<double>>> codebooks;
+	vector<vector<vector<short>>> codebooks;
 	vector<tuple<string, string>> filesNames;
 	vector<int> blocksSizes;
 
@@ -89,17 +89,17 @@ int main(int argc, char *argv[])
 								cerr << "Invalid codebook file structure" << endl;
 								return 1;
 							}
-							codebooks.push_back(vector<vector<double>>(codebookSize));
+							codebooks.push_back(vector<vector<short>>(codebookSize));
 							lineIdx++;
 							continue;
 						}
 
-						codebooks[fileIdx][lineIdx] = vector<double>(blocksSizes[fileIdx]);
+						codebooks[fileIdx][lineIdx] = vector<short>(blocksSizes[fileIdx]);
 
 						while ((pos = line.find(delimiter)) != string::npos)
 						{
 							value = line.substr(0, pos);
-							codebooks[fileIdx][lineIdx][valueIdx] = stod(value);
+							codebooks[fileIdx][lineIdx][valueIdx] = stoi(value);
 							line.erase(0, pos + delimiter.length());
 							valueIdx++;
 						}

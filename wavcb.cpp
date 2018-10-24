@@ -48,7 +48,6 @@ int main(int argc, char *argv[])
 	int codebookSize{stoi(argv[argc - 3])};
 	int maxIterations{stoi(argv[argc - 2])};
 	int nRuns{stoi(argv[argc - 1])};
-	// TODO: Validar inputs
 
 	KMeans kmeans{blockSize, overlap, codebookSize, maxIterations};
 
@@ -69,7 +68,7 @@ int main(int argc, char *argv[])
 	}
 
 	double totalTime = 0;
-	vector<vector<double>> codebook;
+	vector<vector<short>> codebook;
 	vector<short> modifiedSamples; // samples to generate the test wav file
 	double minError = numeric_limits<double>::max();
 	for (int i = 0; i < nRuns; i++)
@@ -95,6 +94,7 @@ int main(int argc, char *argv[])
 		t1 = t2;
 		totalTime += timeSpan.count();
 	}
+
 	cout << "Best Error: " << minError << endl;
 	cout << "It took " << totalTime << " seconds for " << nRuns << " runs." << endl
 		 << "File frames: " << sndFile.frames() << endl
@@ -117,7 +117,9 @@ int main(int argc, char *argv[])
 
 	size_t lastDirPos = fileName.find_last_of("/");
 	if (lastDirPos == string::npos)
-		lastDirPos = 0;
+		lastDirPos = -1;
+
+	lastDirPos++; // ignore '/'
 
 	fileName = fileName.substr(lastDirPos, fileName.find_last_of(".") - lastDirPos);
 	string outFileName = fileName + "_" + to_string(blockSize) + "_" + to_string(overlap) + "_";

@@ -5,6 +5,6 @@ To test:
 	../bin-example/wavcp sample.wav copy.wav // copies "sample.wav" into "copy.wav"
 	../bin-example/wavhist sample.wav 0 // outputs the histogram of channel 0 (left) and the mono version
 	../bin-example/wavquant sample.wav 8 0 // quantize "sample.wav" to 8 bits. Exports both signal in channel 0, and full wav file
-	../bin-example/wavcmp sample.wav sample_quant_nbits6.wav
+	../bin-example/wavcmp quants/sample_quant_nbits8.wav sample.wav // outputs SNR and max error, between quantized and original file
 	../bin-example/wavcb samples/sample04.wav 16 0 256 100 3
 	../bin-example/wavfind samples/sample04_cut.wav codebooks
