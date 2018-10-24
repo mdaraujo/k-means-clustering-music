@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
 
 	if (argc < 3)
 	{
-		cerr << "Usage: wavhist <input file> <codebooks path>" << endl;
+		cerr << "Usage: wavfind <input file> <codebooks path>" << endl;
 		return 1;
 	}
 
@@ -122,8 +122,7 @@ int main(int argc, char *argv[])
 	}
 
 	vector<short> samples(sndFile.frames() * sndFile.channels());
-	sndFile.readf(samples.data(), sndFile.frames() * sndFile.channels()); // read all at once ?
-	// comparar com valor retorno readf
+	sndFile.readf(samples.data(), sndFile.frames() * sndFile.channels());
 
 	cout << "Finding best match for " << inputFileName << endl;
 	double minError = numeric_limits<double>::max();

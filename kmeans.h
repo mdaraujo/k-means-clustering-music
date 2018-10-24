@@ -24,7 +24,6 @@ class KMeans
 	int k;
 	int maxIterations;
 	double error;
-	const int minimumErrorDiff = 1000;
 
   public:
 	KMeans(const int blockSize, const int overlap, const int k, const int maxIterations)
@@ -74,7 +73,6 @@ class KMeans
 		}
 
 		int iterations = 0;
-		double lastError = std::numeric_limits<double>::max();
 		bool finished;
 		std::vector<std::vector<double>> newCentroids;
 		std::vector<int> clusterSize;
@@ -130,13 +128,6 @@ class KMeans
 				std::cout << "Maximum number of iterations reached." << std::endl;
 				break;
 			}
-			if (lastError - error < minimumErrorDiff)
-			{
-				std::cout << "Minimum error difference of " << minimumErrorDiff << " reached." << std::endl;
-				break;
-			}
-
-			lastError = error;
 
 			// move centroids
 			for (int i = 0; i < k; i++)
